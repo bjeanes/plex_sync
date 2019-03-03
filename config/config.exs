@@ -10,7 +10,7 @@ use Mix.Config
 
 # You can configure your application as:
 #
-#     config :plex_sync, key: :value
+config :plex_sync, plex_client_id: "1EEFAE5C-4BF9-4844-BA5E-AABD4DAB5DD9"
 #
 # and access this configuration in your application as:
 #
