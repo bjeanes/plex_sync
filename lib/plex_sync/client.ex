@@ -12,7 +12,7 @@ defmodule PlexSync.Client do
     Stream.resource(
       fn -> {0, nil} end,
       fn
-        {start, total} = state when start >= total ->
+        {start, total} when start >= total ->
           {:halt, {start, total}}
 
         {start, total} ->
@@ -27,7 +27,7 @@ defmodule PlexSync.Client do
               options ++
                 [
                   params: %{
-                    "X-Plex-Container-Size" => 50,
+                    "X-Plex-Container-Size" => 300,
                     "X-Plex-Container-Start" => start
                   }
                 ]
@@ -91,7 +91,7 @@ defmodule PlexSync.Client do
 
   # If not passing a PMS struct, assume this is destined for plex.tv API
   def process_request_url("/" <> path) when is_bitstring(path) do
-    "https://plex.tv#{path}"
+    "https://plex.tv/#{path}"
   end
 
   def process_request_url(path), do: path

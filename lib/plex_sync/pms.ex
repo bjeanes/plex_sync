@@ -21,11 +21,7 @@ defmodule PlexSync.PMS do
   end
 
   def media(%__MODULE__{} = server, %{"key" => key}) do
-    PlexSync.Client.stream({server, "/library/sections/#{key}/all?sort=lastViewedAt:desc"})
-    |> Stream.map(fn {_, attrs, _children} ->
-      Map.new(attrs)
-      |> Map.take(["key", "lastViewedAt", "ratingKey", "title", "type", "viewCount", "year"])
-      |> ProperCase.to_snake_case()
-    end)
+    PlexSync.Client.stream({server, "/library/sections/#{key}/allLeaves?sort=addedAt:desc"})
+    |> Stream.map(fn {_, attrs, _children} -> PlexSync.Media.of(attrs) end)
   end
 end
