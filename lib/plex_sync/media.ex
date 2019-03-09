@@ -23,7 +23,11 @@ defmodule PlexSync.Media do
   end
 
   def of(%{"type" => "movie"} = attrs) do
-    {year, ""} = Integer.parse(attrs["year"])
+    year =
+      case(Integer.parse(attrs["year"] || "")) do
+        {year, ""} -> year
+        :error -> nil
+      end
 
     %PlexSync.Media.Movie{
       title: attrs["title"],

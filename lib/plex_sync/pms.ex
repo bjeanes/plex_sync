@@ -17,10 +17,13 @@ defmodule PlexSync.PMS do
           |> Enum.map(fn {"Directory", attrs, _} -> Map.new(attrs) end)
           |> Enum.filter(fn %{"type" => t} -> Enum.member?(["show", "movie"], t) end)
 
-        {:ok, eligible_sections}
+        eligible_sections
     end
   end
 
+  @doc """
+  Returns media items from the PMS in the given section, ordered by most recently watched.
+  """
   def media(%__MODULE__{} = server, %{"key" => key}) do
     PlexSync.Client.stream({server, "/library/sections/#{key}/allLeaves?sort=lastViewedAt:desc"})
     |> Stream.map(fn {_node, attrs, _children} ->
@@ -35,5 +38,51 @@ defmodule PlexSync.PMS do
         watched: String.to_integer(Map.get(attrs, "viewCount", "0")) > 0
       }
     end)
+  end
+
+  use GenServer
+
+  def start_link(%__MODULE__{} = server) do
+    GenServer.start_link(__MODULE__, server)
+  end
+
+  @impl true
+  def init(%__MODULE__{} = server) do
+    {:ok, %{server: server, fetcher: nil, media_items: []}, {:continue, :start_fetch}}
+  end
+
+  @impl true
+  def handle_continue(:start_fetch, state) do
+    parent = self()
+
+    {:ok, pid} =
+      Supervisor.start_link(
+        [
+          {Task,
+           fn ->
+             sections(state.server)
+             |> Enum.map(fn section ->
+               media(state.server, section)
+               |> Enum.map(fn media ->
+                 GenServer.cast(parent, {:add_item, media})
+               end)
+             end)
+           end}
+        ],
+        strategy: :one_for_one
+      )
+
+    {:noreply, %{state | fetcher: pid}}
+  end
+
+  @impl true
+  def handle_cast({:add_item, %PlexSync.PMS.Media{} = media}, state) do
+    new_state = %{state | media_items: [media | state[:media_items]]}
+    {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_call(:show_state, _from, state) do
+    {:reply, state, state}
   end
 end
