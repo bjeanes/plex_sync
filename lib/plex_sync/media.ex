@@ -7,16 +7,16 @@ defmodule PlexSync.Media do
   end
 
   def of(%{"type" => "episode"} = attrs) do
-    {episode, ""} = Integer.parse(attrs["index"])
-    {season, ""} = Integer.parse(attrs["parent_index"])
-    {year, ""} = Integer.parse(attrs["year"])
+    year =
+      case(Integer.parse(attrs["year"] || "")) do
+        {year, ""} -> year
+        :error -> nil
+      end
 
     %PlexSync.Media.Episode{
-      key: attrs["key"],
-      rating_key: attrs["rating_key"],
       title: attrs["title"],
-      episode: episode,
-      season: season,
+      episode: String.to_integer(attrs["index"]),
+      season: String.to_integer(attrs["parent_index"]),
       show: attrs["grandparent_title"],
       year: year
     }
@@ -26,8 +26,6 @@ defmodule PlexSync.Media do
     {year, ""} = Integer.parse(attrs["year"])
 
     %PlexSync.Media.Movie{
-      key: attrs["key"],
-      rating_key: attrs["rating_key"],
       title: attrs["title"],
       year: year
     }

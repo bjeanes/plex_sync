@@ -1,6 +1,6 @@
 defmodule PlexSync.Media.Episode do
-  @enforce_keys [:key, :rating_key, :title, :season, :show, :episode, :year]
-  defstruct [:key, :rating_key, :title, :season, :show, :episode, :year]
+  @enforce_keys [:title, :season, :show, :episode, :year]
+  defstruct [:title, :season, :show, :episode, :year]
 
   defimpl String.Chars, for: __MODULE__ do
     def to_string(episode) do

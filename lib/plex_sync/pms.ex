@@ -3,6 +3,7 @@ defmodule PlexSync.PMS do
   The module for the API to a PlexMediaServer
   """
 
+  @enforce_keys [:name, :host, :token]
   defstruct [:name, :host, :token, port: 32_400, scheme: "http"]
 
   @doc """
@@ -21,7 +22,18 @@ defmodule PlexSync.PMS do
   end
 
   def media(%__MODULE__{} = server, %{"key" => key}) do
-    PlexSync.Client.stream({server, "/library/sections/#{key}/allLeaves?sort=addedAt:desc"})
-    |> Stream.map(fn {_, attrs, _children} -> PlexSync.Media.of(attrs) end)
+    PlexSync.Client.stream({server, "/library/sections/#{key}/allLeaves?sort=lastViewedAt:desc"})
+    |> Stream.map(fn {_node, attrs, _children} ->
+      media = PlexSync.Media.of(attrs)
+      attrs = Map.new(attrs)
+
+      %PlexSync.PMS.Media{
+        pms: server,
+        item: media,
+        key: attrs["key"],
+        rating_key: attrs["ratingKey"],
+        watched: String.to_integer(Map.get(attrs, "viewCount", "0")) > 0
+      }
+    end)
   end
 end
