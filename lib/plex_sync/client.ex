@@ -5,6 +5,16 @@ defmodule PlexSync.Client do
 
   use HTTPoison.Base
 
+  def headers do
+    [
+      {"X-Plex-Client-Identifier", Application.get_env(:plex_sync, :plex_client_id)},
+      {"X-Plex-Product", "PlexSync"},
+      {"X-Plex-Version", List.to_string(Application.spec(:plex_sync, :vsn))},
+      {"X-Plex-Platform", "Elixir"},
+      {"X-Plex-Platform-Version", System.version()}
+    ]
+  end
+
   @doc """
   Returns a Stream of all `MediaContainer` contents for endpoint until exhausted
   """
@@ -17,8 +27,6 @@ defmodule PlexSync.Client do
 
         {start, total} ->
           total = total || 0
-
-          IO.puts("Running: #{start}, #{total}")
 
           case(
             get(
@@ -105,15 +113,15 @@ defmodule PlexSync.Client do
   end
 
   def process_request_headers(headers) when is_map(headers) do
-    Enum.into(headers, PlexSync.headers())
+    Enum.into(headers, __MODULE__.headers())
   end
 
   def process_request_headers(headers) when is_nil(headers) do
-    PlexSync.headers()
+    headers()
   end
 
   def process_request_headers(headers) when is_list(headers) do
-    PlexSync.headers() ++ headers
+    headers() ++ headers
   end
 
   def process_request_headers(headers), do: headers

@@ -3,8 +3,8 @@ defmodule PlexSync.PMS do
   The module for the API to a PlexMediaServer
   """
 
-  @enforce_keys [:name, :host, :token]
-  defstruct [:name, :host, :token, port: 32_400, scheme: "http"]
+  @enforce_keys [:id, :owner, :name, :host, :token]
+  defstruct [:id, :owner, :name, :host, :token, port: 32_400, scheme: "http"]
 
   @doc """
   Returns eligible sections from the specified PMS
@@ -18,6 +18,10 @@ defmodule PlexSync.PMS do
           |> Enum.filter(fn %{"type" => t} -> Enum.member?(["show", "movie"], t) end)
 
         eligible_sections
+
+      {:error, e} ->
+        IO.puts("#{server.name} unable to be connected: #{e.reason}")
+        []
     end
   end
 
@@ -40,7 +44,19 @@ defmodule PlexSync.PMS do
     end)
   end
 
+  def media_items(%__MODULE__{} = server) do
+    GenServer.call(server, :show_state)
+  end
+
   use GenServer
+
+  def child_spec([%__MODULE__{id: id, name: name}] = server) do
+    %{
+      id: id,
+      name: name,
+      start: {__MODULE__, :start_link, server}
+    }
+  end
 
   def start_link(%__MODULE__{} = server) do
     GenServer.start_link(__MODULE__, server)
@@ -48,7 +64,11 @@ defmodule PlexSync.PMS do
 
   @impl true
   def init(%__MODULE__{} = server) do
-    {:ok, %{server: server, fetcher: nil, media_items: []}, {:continue, :start_fetch}}
+    {
+      :ok,
+      %{server: server, fetcher: nil, media_items: []},
+      {:continue, :start_fetch}
+    }
   end
 
   @impl true

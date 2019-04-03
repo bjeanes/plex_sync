@@ -13,13 +13,18 @@ defmodule PlexSync.Media do
         :error -> nil
       end
 
-    %PlexSync.Media.Episode{
-      title: attrs["title"],
-      episode: String.to_integer(attrs["index"]),
-      season: String.to_integer(attrs["parent_index"]),
-      show: attrs["grandparent_title"],
-      year: year
-    }
+    if !attrs["index"] do
+      # FIXME: not sure why index is sometimes missing or what to do about it when it happens
+      nil
+    else
+      %PlexSync.Media.Episode{
+        title: attrs["title"],
+        episode: String.to_integer(attrs["index"]),
+        season: String.to_integer(attrs["parent_index"]),
+        show: attrs["grandparent_title"],
+        year: year
+      }
+    end
   end
 
   def of(%{"type" => "movie"} = attrs) do
