@@ -1,30 +1,38 @@
-# This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
+# This file is responsible for configuring your umbrella
+# and **all applications** and their dependencies with the
+# help of Mix.Config.
+#
+# Note that all applications in your umbrella share the
+# same configuration and dependencies, which is why they
+# all use the same configuration file. If you want different
+# configurations or dependencies per app, it is best to
+# move said applications out of the umbrella.
 use Mix.Config
 
-# This configuration is loaded before any dependency and is restricted
-# to this project. If another project depends on this project, this
-# file won't be loaded nor affect the parent project. For this reason,
-# if you want to provide default values for your application for
-# third-party users, it should be done in your "mix.exs" file.
+# Configure Mix tasks and generators
+config :plex_sync,
+  ecto_repos: [PlexSync.Repo],
+  plex_client_id: "plexsync"
 
-# You can configure your application as:
-#
-config :plex_sync, plex_client_id: "1EEFAE5C-4BF9-4844-BA5E-AABD4DAB5DD9"
-#
-# and access this configuration in your application as:
-#
-#     Application.get_env(:plex_sync, :key)
-#
-# You can also configure a third-party app:
-#
-#     config :logger, level: :info
-#
+config :plex_sync_web,
+  ecto_repos: [PlexSync.Repo],
+  generators: [context_app: :plex_sync, binary_id: true]
 
-# It is also possible to import configuration files, relative to this
-# directory. For example, you can emulate configuration per environment
-# by uncommenting the line below and defining dev.exs, test.exs and such.
-# Configuration from the imported file will override the ones defined
-# here (which is why it is important to import them last).
-#
-#     import_config "#{Mix.env()}.exs"
+# Configures the endpoint
+config :plex_sync_web, PlexSyncWeb.Endpoint,
+  url: [host: "localhost"],
+  secret_key_base: "8z9DpspHJdib/zmh+dz69ye1rPlRvU86mo4hKlhNDyTwqSbBdra7s6xNERRjzaOH",
+  render_errors: [view: PlexSyncWeb.ErrorView, accepts: ~w(html json)],
+  pubsub: [name: PlexSyncWeb.PubSub, adapter: Phoenix.PubSub.PG2]
+
+# Configures Elixir's Logger
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id]
+
+# Use Jason for JSON parsing in Phoenix
+config :phoenix, :json_library, Jason
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
+import_config "#{Mix.env()}.exs"

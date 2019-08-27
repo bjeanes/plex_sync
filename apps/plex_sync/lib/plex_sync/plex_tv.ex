@@ -61,6 +61,35 @@ defmodule PlexSync.PlexTV do
     end
   end
 
+  # https://github.com/tidusjar/Ombi/issues/2894#issuecomment-477404691
+  def create_pin do
+    case(PlexSync.Client.post("/api/v2/pins.xml?strong=true", "")) do
+      {:ok, %HTTPoison.Response{body: {"pin", pin, _}}} ->
+        pin = Map.new(pin)
+
+        %{
+          id: String.to_integer(pin["id"]),
+          code: pin["code"],
+          client_id: pin["clientIdentifier"],
+        }
+    end
+  end
+
+  # https://github.com/tidusjar/Ombi/issues/2894#issuecomment-477404691
+  def exchange_pin(pin_id) do
+    case(PlexSync.Client.get("/api/v2/pins/#{pin_id}.xml")) do
+      {:ok, %HTTPoison.Response{body: {"pin", pin, _}}} ->
+        pin = Map.new(pin)
+
+        %{
+          id: String.to_integer(pin["id"]),
+          code: pin["code"],
+          client_id: pin["clientIdentifier"],
+          token: pin["authToken"],
+        }
+    end
+  end
+
   defp request(token, method, "/" <> path) do
     PlexSync.Client.request(method, "/#{path}", "", [{"X-Plex-Token", token}])
   end

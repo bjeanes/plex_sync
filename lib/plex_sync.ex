@@ -1,2 +1,0 @@
-defmodule PlexSync do
-end

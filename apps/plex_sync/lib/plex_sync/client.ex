@@ -6,13 +6,14 @@ defmodule PlexSync.Client do
   use HTTPoison.Base
 
   def headers do
-    [
-      {"X-Plex-Client-Identifier", Application.get_env(:plex_sync, :plex_client_id)},
-      {"X-Plex-Product", "PlexSync"},
-      {"X-Plex-Version", List.to_string(Application.spec(:plex_sync, :vsn))},
-      {"X-Plex-Platform", "Elixir"},
-      {"X-Plex-Platform-Version", System.version()}
-    ]
+    %{
+      "X-Plex-Client-Identifier"=> Application.get_env(:plex_sync, :plex_client_id),
+      "X-Plex-Product"=> "PlexSync",
+      "X-Plex-Device"=> "Web",
+      "X-Plex-Version"=> List.to_string(Application.spec(:plex_sync, :vsn)),
+      "X-Plex-Platform"=> "Elixir",
+      "X-Plex-Platform-Version"=> System.version()
+    }
   end
 
   @doc """
@@ -69,11 +70,11 @@ defmodule PlexSync.Client do
   #    transform our PMS struct into a URL in that callback.
   # 2. There is no callback to allow setting headers based on such a "endpoint" struct anyway
   def request(
-        %HTTPoison.Request{
-          url: {%PlexSync.PMS{scheme: scheme, host: host, port: port, token: token}, "/" <> path},
-          headers: headers
-        } = request
-      ) do
+    %HTTPoison.Request{
+      url: {%PlexSync.PMS{scheme: scheme, host: host, port: port, token: token}, "/" <> path},
+      headers: headers
+    } = request
+  ) do
     url = "#{scheme}://#{host}:#{port}/#{path}"
 
     headers =
@@ -121,7 +122,7 @@ defmodule PlexSync.Client do
   end
 
   def process_request_headers(headers) when is_list(headers) do
-    headers() ++ headers
+    Map.to_list(headers()) ++ headers
   end
 
   def process_request_headers(headers), do: headers

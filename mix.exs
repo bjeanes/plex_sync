@@ -1,38 +1,27 @@
-defmodule PlexSync.MixProject do
-  @moduledoc false
-
+defmodule PlexSync.Umbrella.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :plex_sync,
-      version: "0.1.0",
-      elixir: "~> 1.8",
+      apps_path: "apps",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
-  def application do
-    [
-      mod: {PlexSync.App, []},
-      # applications: [:httpoison, :proper_case],
-      extra_applications: [:logger]
-    ]
-  end
-
-  # Run "mix help deps" to learn about dependencies.
+  # Dependencies can be Hex packages:
+  #
+  #   {:mydep, "~> 0.3.0"}
+  #
+  # Or git/path repositories:
+  #
+  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
+  #
+  # Type "mix help deps" for more examples and options.
+  #
+  # Dependencies listed here are available only for this project
+  # and cannot be accessed from applications inside the apps folder
   defp deps do
-    [
-      {:saxy, "~> 0.9.1"},
-      {:httpoison, "~> 1.4"},
-      {:poison, "~> 3.1"},
-      {:proper_case, "~> 1.0.2"},
-      {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-    ]
+    []
   end
 end
