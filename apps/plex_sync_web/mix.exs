@@ -41,6 +41,7 @@ defmodule PlexSyncWeb.MixProject do
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
       {:phoenix_html, "~> 2.11"},
+      {:phoenix_live_view, "~> 0.1.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:gettext, "~> 0.11"},
       {:plex_sync, in_umbrella: true},

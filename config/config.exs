@@ -23,7 +23,10 @@ config :plex_sync_web, PlexSyncWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "8z9DpspHJdib/zmh+dz69ye1rPlRvU86mo4hKlhNDyTwqSbBdra7s6xNERRjzaOH",
   render_errors: [view: PlexSyncWeb.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: PlexSyncWeb.PubSub, adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: PlexSyncWeb.PubSub, adapter: Phoenix.PubSub.PG2],
+  live_view: [
+    signing_salt: "Gxz0lLkdpmHo9AsDXtT2CWdZGgY60+UY"
+  ]
 
 # Configures Elixir's Logger
 config :logger, :console,
