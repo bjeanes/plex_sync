@@ -33,7 +33,11 @@ defmodule PlexSyncWeb.LoginController do
   def callback(conn, %{"pin_id" => pin_id}) do
     case(PlexSync.PlexTV.exchange_pin(pin_id)) do
       %{token: nil} -> conn |> put_status(:unauthorized) |> text("Unauthorized")
-      %{token: token} -> conn |> text("Success - #{token}!")
+      %{token: token} ->
+        { :ok, user } = PlexSync.PlexTV.get_current_user(token)
+        conn
+        |> put_session(:user, user |> Poison.encode!)
+        |> redirect(to: "/")
     end
   end
 end

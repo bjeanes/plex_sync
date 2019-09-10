@@ -3,13 +3,24 @@ defmodule PlexSync.PMS do
   The module for the API to a PlexMediaServer
   """
 
-  @enforce_keys [:id, :owner, :name, :host, :token]
-  defstruct [:id, :owner, :name, :host, :token, port: 32_400, scheme: "http"]
+  @enforce_keys [:id, :owner, :name, :addresses, :token]
+  defstruct [:id, :owner, :name, :addresses, :token]
+
+  require Logger
+  alias PlexSync.Client
+
+  defimpl String.Chars, for: __MODULE__ do
+    def to_string(pms) do
+      pms.name
+    end
+  end
 
   @doc """
   Returns eligible sections from the specified PMS
   """
   def sections(%__MODULE__{} = server) do
+    Logger.debug("Getting media sections for PMS #{server}")
+
     case(PlexSync.Client.get({server, "/library/sections"})) do
       {:ok, %HTTPoison.Response{body: {"MediaContainer", _, sections}}} ->
         eligible_sections =
@@ -20,7 +31,7 @@ defmodule PlexSync.PMS do
         eligible_sections
 
       {:error, e} ->
-        IO.puts("#{server.name} unable to be connected: #{e.reason}")
+        Logger.error("#{server} unable to be connected: #{e.reason}")
         []
     end
   end
@@ -28,7 +39,9 @@ defmodule PlexSync.PMS do
   @doc """
   Returns media items from the PMS in the given section, ordered by most recently watched.
   """
-  def media(%__MODULE__{} = server, %{"key" => key}) do
+  def media(%__MODULE__{} = server, %{"key" => key, "type" => type}) do
+    Logger.debug("Getting media for #{type} section #{key} for PMS #{server}")
+
     PlexSync.Client.stream({server, "/library/sections/#{key}/allLeaves?sort=lastViewedAt:desc"})
     |> Stream.map(fn {_node, attrs, _children} ->
       media = PlexSync.Media.of(attrs)
@@ -50,25 +63,59 @@ defmodule PlexSync.PMS do
 
   use GenServer
 
-  def child_spec([%__MODULE__{id: id, name: name}] = server) do
+  def child_spec({%__MODULE__{} = server, syncer_pid, options}) do
     %{
-      id: id,
-      name: name,
-      start: {__MODULE__, :start_link, server}
+      id: __MODULE__,
+      start: {
+        GenServer,
+        :start_link,
+        [__MODULE__, {server, syncer_pid}, options]
+      }
     }
-  end
-
-  def start_link(%__MODULE__{} = server) do
-    GenServer.start_link(__MODULE__, server)
   end
 
   @impl true
-  def init(%__MODULE__{} = server) do
-    {
-      :ok,
-      %{server: server, fetcher: nil, media_items: []},
-      {:continue, :start_fetch}
-    }
+  def init({%__MODULE__{addresses: []}, _}) do
+    {:stop, :inaccessible}
+  end
+
+  @impl true
+  def init({%__MODULE__{addresses: addresses} = server, syncer_pid}) do
+    valid_addresses =
+      addresses
+      |> Task.async_stream(
+        fn address ->
+          Logger.debug("Trying to connect to #{server} on #{address.host}:#{address.port}")
+
+          case(Client.get({%__MODULE__{server | addresses: [address]}, "/"})) do
+            {:ok, %HTTPoison.Response{status_code: code}} when code in 200..299 ->
+              address
+
+            _ ->
+              nil
+          end
+        end,
+        on_timeout: :kill_task,
+        max_concurrency: System.schedulers_online() * 2
+      )
+      |> Stream.map(fn
+        {:ok, nil} -> nil
+        {:ok, address} -> address
+        _ -> nil
+      end)
+      |> Stream.reject(&is_nil/1)
+
+    if Enum.any?(valid_addresses) do
+      {:ok,
+       %{
+         server: %__MODULE__{server | addresses: Enum.to_list(valid_addresses)},
+         fetcher: nil,
+         media_items: [],
+         syncer_pid: syncer_pid
+       }, {:continue, :start_fetch}}
+    else
+      {:stop, :inaccessible}
+    end
   end
 
   @impl true
@@ -97,6 +144,7 @@ defmodule PlexSync.PMS do
 
   @impl true
   def handle_cast({:add_item, %PlexSync.PMS.Media{} = media}, state) do
+    # Logger.debug("Adding media item #{media} to PMS #{media.pms}")
     new_state = %{state | media_items: [media | state[:media_items]]}
     {:noreply, new_state}
   end

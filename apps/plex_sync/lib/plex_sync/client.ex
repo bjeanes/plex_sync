@@ -7,12 +7,12 @@ defmodule PlexSync.Client do
 
   def headers do
     %{
-      "X-Plex-Client-Identifier"=> Application.get_env(:plex_sync, :plex_client_id),
-      "X-Plex-Product"=> "PlexSync",
-      "X-Plex-Device"=> "Web",
-      "X-Plex-Version"=> List.to_string(Application.spec(:plex_sync, :vsn)),
-      "X-Plex-Platform"=> "Elixir",
-      "X-Plex-Platform-Version"=> System.version()
+      "X-Plex-Client-Identifier" => Application.get_env(:plex_sync, :plex_client_id),
+      "X-Plex-Product" => "PlexSync",
+      "X-Plex-Device" => "Web",
+      "X-Plex-Version" => List.to_string(Application.spec(:plex_sync, :vsn)),
+      "X-Plex-Platform" => "Elixir",
+      "X-Plex-Platform-Version" => System.version()
     }
   end
 
@@ -70,12 +70,12 @@ defmodule PlexSync.Client do
   #    transform our PMS struct into a URL in that callback.
   # 2. There is no callback to allow setting headers based on such a "endpoint" struct anyway
   def request(
-    %HTTPoison.Request{
-      url: {%PlexSync.PMS{scheme: scheme, host: host, port: port, token: token}, "/" <> path},
-      headers: headers
-    } = request
-  ) do
-    url = "#{scheme}://#{host}:#{port}/#{path}"
+        %HTTPoison.Request{
+          url: {%PlexSync.PMS{addresses: [address | _], token: token}, "/" <> _ = path},
+          headers: headers
+        } = request
+      ) do
+    url = URI.merge(address, path)
 
     headers =
       if is_nil(headers) do

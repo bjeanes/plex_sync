@@ -13,6 +13,23 @@ defmodule PlexSync.PlexTV do
           |> Enum.map(fn {"Server", attrs_list, _} ->
             attrs = Map.new(attrs_list)
 
+            default_port = attrs["port"]
+
+            # Plex returns entries that have both a top-level address and a
+            # list of "local addresses". We want to try connecting to all of
+            # these, so we'll flatten them into a single list that we can use
+            # to try different connections with.
+            addresses =
+              attrs["localAddresses"]
+              |> String.split(",", trim: true)
+              |> Enum.map(&String.split(&1, ":"))
+              |> List.insert_at(0, [attrs["host"]])
+              |> Enum.map(fn
+                [host] -> "http://#{host}:#{default_port}/"
+                [host, port] -> "http://#{host}:#{port}/"
+              end)
+              |> Enum.map(&URI.parse/1)
+
             %PlexSync.PMS{
               id: attrs["machineIdentifier"],
               owner: %{
@@ -21,9 +38,7 @@ defmodule PlexSync.PlexTV do
               },
               token: attrs["accessToken"],
               name: attrs["name"],
-              host: attrs["host"],
-              port: attrs["port"],
-              scheme: attrs["scheme"]
+              addresses: addresses
             }
           end)
 
@@ -40,6 +55,70 @@ defmodule PlexSync.PlexTV do
     end
   end
 
+  # {:ok,
+  #  %{
+  #    "auth_token" => "REDACTED",
+  #    "authentication_token" => "REDACTED",
+  #    "certificate_version" => "2",
+  #    "cloud_sync_device" => "",
+  #    "email" => "me@bjeanes.com",
+  #    "guest" => "0",
+  #    "has_password" => "true",
+  #    "home" => "1",
+  #    "home_size" => "1",
+  #    "id" => "5618",
+  #    "locale" => "en-GB",
+  #    "mailing_list_status" => "active",
+  #    "max_home_size" => "15",
+  #    "pin" => "REDACTED",
+  #    "queue_email" => "REDACTED",
+  #    "queue_uid" => "REDACTED",
+  #    "remember_me" => "false",
+  #    "restricted" => "0",
+  #    "scrobble_types" => "",
+  #    "secure" => "1",
+  #    "thumb" => "https://plex.tv/users/f71ec2b78f9bee36/avatar?c=1566947739",
+  #    "title" => "bjeanes",
+  #    "username" => "bjeanes",
+  #    "uuid" => "f71ec2b78f9bee36"
+  #  }}
+  def get_current_user(token) do
+    case PlexSync.Client.get("/users/account", [{"X-Plex-Token", token}]) do
+      {:ok, %HTTPoison.Response{body: {"user", user, _}}} ->
+        {:ok, user |> Map.new() |> ProperCase.to_snake_case()}
+
+      other ->
+        other
+    end
+  end
+
+  # {:ok,
+  #  %{
+  #    "auth_token" => "REDACTED",
+  #    "authentication_token" => "REDACTED",
+  #    "certificate_version" => "2",
+  #    "cloud_sync_device" => "",
+  #    "email" => "me@bjeanes.com",
+  #    "guest" => "0",
+  #    "has_password" => "true",
+  #    "home" => "1",
+  #    "home_size" => "1",
+  #    "id" => "5618",
+  #    "locale" => "en-GB",
+  #    "mailing_list_status" => "active",
+  #    "max_home_size" => "15",
+  #    "pin" => "REDACTED",
+  #    "queue_email" => "REDACTED",
+  #    "queue_uid" => "REDACTED",
+  #    "remember_me" => "false",
+  #    "restricted" => "0",
+  #    "scrobble_types" => "",
+  #    "secure" => "1",
+  #    "thumb" => "https://plex.tv/users/f71ec2b78f9bee36/avatar?c=1566947739",
+  #    "title" => "bjeanes",
+  #    "username" => "bjeanes",
+  #    "uuid" => "f71ec2b78f9bee36"
+  #  }}
   def get_user(username, password) do
     case(
       PlexSync.Client.post(
@@ -70,7 +149,7 @@ defmodule PlexSync.PlexTV do
         %{
           id: String.to_integer(pin["id"]),
           code: pin["code"],
-          client_id: pin["clientIdentifier"],
+          client_id: pin["clientIdentifier"]
         }
     end
   end
@@ -85,7 +164,7 @@ defmodule PlexSync.PlexTV do
           id: String.to_integer(pin["id"]),
           code: pin["code"],
           client_id: pin["clientIdentifier"],
-          token: pin["authToken"],
+          token: pin["authToken"]
         }
     end
   end
