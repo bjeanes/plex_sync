@@ -7,4 +7,13 @@ defmodule PlexSync.PMS.Media do
       "#{media.item} on PMS #{media.pms}"
     end
   end
+
+  def mark_watched!(%__MODULE__{watched: watched} = media) do
+    if not watched do
+      # TODO
+      {:TODO, %__MODULE__{media | watched: true}}
+    else
+      :noop
+    end
+  end
 end

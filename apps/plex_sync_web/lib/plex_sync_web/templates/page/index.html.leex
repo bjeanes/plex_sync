@@ -1,0 +1,29 @@
+<section class="phx-hero">
+  <h1>Hello, <%= @user["username"] %></h1>
+</section>
+
+<section class="row">
+  <article class="column">
+    <ul>
+      <%= for { server, {:running, pid} } <- Enum.sort(@syncer[:servers]) do %>
+        <li style="color: green">
+          <%= server.name %>
+          <%= if server.owner.name do %>
+            - <%= server.owner.name %>
+          <% end %>
+        </li>
+      <% end %>
+      <%= for { server, :down } <- Enum.sort(@syncer[:servers]) do %>
+        <li style="color: red">
+          <%= server.name %>
+          <%= if server.owner.name do %>
+            - <%= server.owner.name %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </article>
+  <%# <article class="column"> %>
+  <%#   <pre><%= inspect assigns, pretty: true %1></pre> %>
+  <%# </article> %>
+</section>

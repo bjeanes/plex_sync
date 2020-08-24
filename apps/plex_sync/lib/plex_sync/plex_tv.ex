@@ -28,6 +28,7 @@ defmodule PlexSync.PlexTV do
                 [host] -> "http://#{host}:#{default_port}/"
                 [host, port] -> "http://#{host}:#{port}/"
               end)
+              |> Enum.dedup()
               |> Enum.map(&URI.parse/1)
 
             %PlexSync.PMS{
